@@ -1,4 +1,4 @@
--- AUGC V2 Patch 1 Experimental
+-- AUGC V2 Experimental Patch 1
 local component = require("component")
 if component.filesystem.isReadOnly() then 
     return 
@@ -16,7 +16,7 @@ local event = require("event")
 local internet = require("internet")
 local function update()
     thread.create(function()
-        local GERTiClientVersionRequest = internet.request("https://raw.githubusercontent.com/GlobalEmpire/GERT/master/GERTi/Update%20Data/GERTiClient%20Experimental%20Release.txt")
+        local GERTiClientVersionRequest = internet.request("https://raw.githubusercontent.com/leothehero/GERT/Development/GERTi/Update%20Data/GERTiClient%20Experimental%20Release.txt")
         local RequestString = ""
         for element in GERTiClientVersionRequest do
             RequestString = RequestString .. element
@@ -43,7 +43,7 @@ local function update()
         return
     end):detach()
     thread.create(function()
-        local GCAUVR = internet.request("https://raw.githubusercontent.com/Leothehero/OC-Programs/AutoUpdaters/Programs/AutoUpdaters/Tonatsi/Version%20Files/GERTi/GCAUS%Experimental.txt")
+        local GCAUVR = internet.request("https://raw.githubusercontent.com/leothehero/OC-Programs/AutoUpdaters/Programs/AutoUpdaters/Tonatsi/Version%20Files/GERTi/GCAUS%20Experimental.txt")
         local RequestString = ""
         for element in GCAUVR do
             RequestString = RequestString .. element
