@@ -2,7 +2,7 @@
 [default value]
 Client:
 	Startup:
-		Load UserConfig:
+		Load UserConfig: (by default, this will be stored in ".config/OpenSyncClient/")
 			CheckUpdate [false] (Whether the Application will check for updates)
 			InstallUpdate [false] (If true, the application will automatically install any updates it finds. If false, it will instead notify the user)
 			StartupErrors [true] (If true, After the program first starts, if it encounters a problem that requires the user's intervention to fix, the program will display an error screen to the user after startup, explaining the errors and possible solutions)
@@ -11,7 +11,7 @@ Client:
 			Silent [false] (The program will beep to notify the user about something when applicable. If this is true, it will not)
 			AutoConnect [true] (If true, the program will automatically attempt to connect to the server and start syncronising files. If false, the user will have to manually start the synncronisation process)
 
-		Load AppConfig:
+		Load AppConfig: (by default, this will be stored in ".config/OpenSyncClient/")
 			SyncFolderPath (Which folder is synced)
 			AuthToken (For safe server login)
 			ServerAddress (Where the server is)
@@ -19,7 +19,7 @@ Client:
 			
 Server:
 	Startup:
-		Load AppConfig:
+		Load AppConfig: (by default, this will be stored in ".config/OpenSyncServer/")
 			SyncPollLimit [50] (An event handler is created when the server receives a sync request from a client (Address Filtering) and the server simply responds through the socket "wait" if the client has not waited long enough before polling. This should never actually happen, but it's here in case)
 			DefaultUserQuota [64] (In Kilobytes, the storage quota that a single normal user account is allowed) (if a single maxed Raid drive isnt sufficient, try this program (https://oc.cil.li/topic/1735-bundle-allows-to-use-multiple-filesystems-as-a-single-one/) to merge multiple raids, and then set the custom path to the new bundle drive. If you need to transfer data, use the program's built in "drive transfer" function {If i've implemented it})
 			PremiumUserQuota [256] (Same as above, but for 'premium' users. This can be setup however the user wishes, as premium users are stored in "PremiumUsers.txt" in the same directory as the AppConfig file, so a program can be written to manage how premium is assigned. Example: write a program that accepts payments through another terminal, and assigns 30 days premium to the user by writing their username in this file, and removing it when the time has expired.)
