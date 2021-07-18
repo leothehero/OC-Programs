@@ -9,18 +9,185 @@ Client:
 			StartupWarnings [true] (If true, After Startup, if anything concerning, but not classed as an error appears, it will be displayed on startup. If a StartupErrors screen appears first, the StartupWarnings screen will wait until all errors are resolved to display)
 			BlockingError [false] (If true, the application will activate a script in the boot folder and prevent the computer from finishing startup until the user has acknowledged the errors)
 			Silent [false] (The program will beep to notify the user about something when applicable. If this is true, it will not)
-			AutoConnect [true] (If true, the program will automatically attempt to connect to the server and start syncronising files. If false, the user will have to manually start the synncronisation process)
+			AutoConnect [true] (If true, the program will automatically attempt to connect to the server and start syncronising files. If false, the user will have to manually start the syncronisation process)
+			StoreCredentials [false] (If true, the program will store your login details on the drive, and automatically attempt to log in when the auth token expires.)
 
 		Load AppConfig: (by default, this will be stored in ".config/OpenSyncClient/")
 			SyncFolderPath (Which folder is synced)
 			AuthToken (For safe server login)
 			ServerAddress (Where the server is)
+			ServerPort [256] (GERTi CID)
 			SyncPoll [60] (Time in seconds that the application polls the server to attempt a sync verification. This is also dependent on the server, as the server will reject any request not in its own SyncPollLimit, which is by default 50)
+			SyncFolderPath ["home/OpenSync"] (The folder that OpenSync syncronises by default. There are no naming restrictions. OpenSync will create any directory it needs to to validate this path if they are not found, but it will not rename files preventing directory creation, instead pushing an error)
+		
+		Open Socket to Server
+		Send AuthToken for verification -- Server Responds "TokenValid" or "TokenInvalid"
+		If "TokenInvalid": 
+			Request Login from user, enter "Login" state.
+		Elseif "TokenValid":
+			Enter "Sync" State
 			
+	Sync:
+		Request User Premium Status and User Quota from server
+		Count size of every file in directory and confirm it is under the limit, if not, Error
+		Handshake with code "Sync"
+		Send AuthToken
+		If AuthToken invalid:
+			Enter "Login" State
+		Else:
+			Request Filestates
+			Deserialise Filestates as table1
+			filetable = table1["files"]
+			LastSync = table1["LastSync"]
+			Load SyncFolderPath .. "/" .. .OpenSyncStatus:
+				UnSerialize as table2 containing: filenames and their last modified time
+			Iterate filetable:
+				If fs.exists(key):
+					If fs.lastModified(path .. key) < filetable[key]["time"]
+						Request key from server as file
+						Inflate file
+						Replace file
+						Table2[key]=fs.lastModified(path .. file)
+				Else:
+					If not(key in table2):
+						Request key from server as file
+						Inflate file
+						Create file
+						
+						
+						If table2[key] < filetable[key]["time"]
+						
+			
+			
+			
+			
+			
+			
+			Create empty table3 of files to sync
+			Get filesystem.list iterator and compare it to table2:
+				If LastModTime is same: 
+					skip
+				If LastModTime is later than recorded: 
+					store in table3 with value "sync"
+				If file is present in folder but not in status list: 
+					store name in table3 with value "create"
+				If file is present in status list but not in folder: 
+					store name in table3 with value "delete"
+				Serialise table3
+				send table3 to server
+				
+	Login:
+		
 Server:
 	Startup:
 		Load AppConfig: (by default, this will be stored in ".config/OpenSyncServer/")
-			SyncPollLimit [50] (An event handler is created when the server receives a sync request from a client (Address Filtering) and the server simply responds through the socket "wait" if the client has not waited long enough before polling. This should never actually happen, but it's here in case)
+			SyncPollLimit [50] (An event handler is created when the server receives a sync request from a client (Address Filtering) and the server simply responds through the socket "wait" if the client has not waited long enough before polling)
 			DefaultUserQuota [64] (In Kilobytes, the storage quota that a single normal user account is allowed) (if a single maxed Raid drive isnt sufficient, try this program (https://oc.cil.li/topic/1735-bundle-allows-to-use-multiple-filesystems-as-a-single-one/) to merge multiple raids, and then set the custom path to the new bundle drive. If you need to transfer data, use the program's built in "drive transfer" function {If i've implemented it})
-			PremiumUserQuota [256] (Same as above, but for 'premium' users. This can be setup however the user wishes, as premium users are stored in "PremiumUsers.txt" in the same directory as the AppConfig file, so a program can be written to manage how premium is assigned. Example: write a program that accepts payments through another terminal, and assigns 30 days premium to the user by writing their username in this file, and removing it when the time has expired.)
-			FilePath ["OpenSync"]
+			PremiumUserQuota [256] (Same as above, but for 'premium' users. This can be setup however the user wishes, as premium users are stored in "PremiumUsers.txt" in the FilePath directory, so a program can be written to manage how premium is assigned. Example: write a program that accepts payments through another terminal, and assigns 30 days premium to the user by writing their username in this file, and removing it when the time has expired.)
+			FilePath ["OpenSync"] (Where the server stores files and the premium user file)
+			CheckUpdate [true] (If true, the server will check for updates)
+			InstallUpdate [true] (If true, the server will automatically install updates when possible.)
+				(Upon successfully downloading the update, the server will enter "UpdatePending" mode. In this mode, the server will continue to allow syncronisation to any client that is in the process of syncronising its files, but if any new client attempts to start syncronising, the server will respond with "UpdatePending".
+				The intended client behaviour upon receiving "UpdatePending" is to suspend polling the server until the socket is closed, and then reopen the socket after a random time around the client's SyncPoll Delay has elapsed from the socket closing. Randomised so that the server is not bombarded with many connection attempts in the same instant.
+				The server will start updating when all clients have finished syncronising, at which point it will close all open sockets and update.)
+			ServerPort [256] (GERTi CID)
+			AuthTokenTime [30] (How many days an AuthToken stays valid for before re-authentication is required)
+	Normal:
+		When Socket is opened on ServerPort: 
+			Respond by opening socket
+		
+		When "CheckAuthToken" received:
+			Handshake
+			Receive Token
+			AuthenticateToken(Token)
+			Respond Token Validity
+			End Handshake
+		
+		When Premium Status requested: 
+			Check and respond
+		
+		When Quota Requested: 
+			Check and respond
+		
+		When Login Requested: 
+			Handshake
+			Respond Ready For Login
+			Receive Encrypted Username, Public Key, Signature of Password
+			Decrypt Username
+			Confirm Signature of Password
+			If confirmed:
+				Generate random length 64 string
+				Get OS Timestamp
+				Get Server ID (((WIP)))
+				combine
+				create and store SHA256 hash under username !!!!Alternatively, get UUID library and generate UUID
+				Respond hash
+			Else:
+				Respond "InvalidCredentials"
+			End Handshake
+				
+		When Sync Attempt Received:
+			Handshake
+			Receive Token
+			AuthenticateToken(Token)
+			Respond Token Validity and end handshake if Invalid
+			Create table1
+			Get filesystem.list of files, their last modified date and their size in the folder and fill table1 in, with the filename as key and another table of key,value pairs of last modified date and size as the value: table1[filename] = {"size"=xxxx;"time"=yyyy}
+			Load .LastSync
+			Create table2
+			table2["files"]=table1
+			table2["LastSync"]=LastSync
+			Serialise table2 as serialTable
+			Send serialTable
+			
+			
+			Receive Serialized table of files
+			Deserialize table into table2
+			Iterate table1:
+				If value == "sync" or "create":
+					Request file !!!!!!!! Add a way to prevent oversizing the folder
+					Replace or create file with requested file
+				Elseif value == "delete":
+					Remove file
+			Respond Success or failure as necessary.
+			
+			
+
+			
+	PendingUpdate:
+	
+	
+	
+	Function-AuthenticateToken(Token):
+		Check whether Auth Token in Token List
+			If no:
+				Return "TokenInvalid"
+			If yes:
+				Check Expiry
+				If valid:
+					Return "TokenValid"
+				If invalid:
+					Return "TokenInvalid"
+					Remove Token from list
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
